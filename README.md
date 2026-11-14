@@ -4,6 +4,10 @@ A simple macOS menu-bar app for controlling the volume of individual open apps. 
 
 **Every app starts at 100%. No amplification, equalizer, or audio driver.**
 
+<p align="center">
+  <img src="docs/images/volume-mixer.png" alt="Volume Mixer menu-bar panel showing open apps with individual volume sliders at 100 percent" width="396">
+</p>
+
 ## Features
 
 - **Menu-bar controls:** click the three-slider icon to open the mixer.
