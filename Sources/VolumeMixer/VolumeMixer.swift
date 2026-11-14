@@ -206,7 +206,10 @@ struct MixerView: View {
                             if app.id != model.apps.last?.id { Divider().padding(.leading, 18) }
                         }
                     }
-                }.frame(maxHeight: 430)
+                }
+                // A menu-bar popover supplies no proposed scroll height. Give the list
+                // a concrete viewport so LazyVStack rows cannot collapse to zero.
+                .frame(height: min(430, CGFloat(model.apps.count) * 86))
             }
             Divider()
             VStack(alignment: .leading, spacing: 12) {
