@@ -14,7 +14,8 @@ A simple macOS menu-bar app for controlling the volume of individual open apps. 
 - **Open apps only:** the list updates as apps launch and quit, with icons and audio activity indicators.
 - **Individual volume sliders:** adjust each app from 0% to 100%, with the percentage shown beside its name.
 - **Original audio at 100%:** the app's audio passes through normally, without capture or replay. Audio processing starts only when you reduce its volume.
-- **No amplification:** gain is limited to the original signal level. Percentages represent linear sample gain, not perceived loudness.
+- **Perceptual volume curve:** a cubic taper gives more control over quieter levels, consistently across output devices. Percentages show slider position, not raw amplitude or a measured loudness percentage.
+- **No amplification:** gain is limited to the original signal level. 100% remains untouched audio and 0% remains mute.
 - **One-click mute:** mute an app or restore it to 100% using its speaker button.
 - **Reset all:** return every app to its original volume immediately.
 - **Fresh defaults:** newly opened apps start at 100%. Volume settings are not saved between mixer launches.

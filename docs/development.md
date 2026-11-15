@@ -48,7 +48,8 @@ The main-thread model polls once per second. It removes routes for exited apps, 
 
 ## DSP invariants
 
-- Gain is clamped to `[0, 1]`; nonfinite gain values resolve to unity.
+- The UI maps slider position to gain with `gain = (percent / 100)³`. This cubic perceptual taper is independent of the output device; it does not claim to duplicate the device's macOS scalar-to-decibel mapping.
+- DSP gain is clamped to `[0, 1]`; nonfinite gain values resolve to unity.
 - Unity in the UI is a routing bypass, not merely multiplication by one.
 - The callback performs no memory allocation, locks, Objective-C messaging, file access, or network access.
 - Gain changes ramp over the callback buffer to reduce discontinuities.

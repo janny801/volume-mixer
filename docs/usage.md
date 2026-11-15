@@ -10,7 +10,7 @@ The list contains currently open applications with a regular macOS app presence.
 
 | Control | Behavior |
 | --- | --- |
-| App slider | Sets linear gain from 0% to 100%. |
+| App slider | Adjusts volume from mute to original audio using a perceptual cubic curve. |
 | Percentage | Shows the current requested volume. |
 | Speaker button | Mutes the app; clicking again restores 100%, not its previous level. |
 | Waveform indicator | Indicates that macOS reports active output audio for an associated process. |
@@ -21,6 +21,25 @@ The list contains currently open applications with a regular macOS app presence.
 **100% means the app's original audio, subject to its own volume controls and the Mac's master volume.** It does not turn the Mac's speakers up to maximum. The mixer never increases gain above the original signal.
 
 At 100%, the mixer creates no audio route for that app. Below 100%, it captures the app's output using a private Core Audio process tap, applies attenuation, and plays it through the current default output. The original stream is muted only while the tap is active.
+
+## Slider curve
+
+The slider uses a cubic audio taper: `gain = (percentage / 100)³`. It gives quieter
+levels more slider travel than direct linear amplitude scaling. The same curve is
+used for speakers and headphones; it approximates the feel of a conventional
+volume slider rather than reproducing a particular macOS device's volume curve.
+
+| Slider position | Signal amplitude | Attenuation |
+| --- | --- | --- |
+| 100% | Original signal (bypass) | 0 dB |
+| 75% | About 42% | About −7.5 dB |
+| 50% | 12.5% | About −18 dB |
+| 25% | About 1.6% | About −36 dB |
+| 0% | Silence | Mute |
+
+These percentages are slider positions, not measured perceived loudness. Gain
+changes still use a short smoothing ramp to reduce clicks. The Mac's master
+volume continues to apply separately.
 
 ## Permissions
 
