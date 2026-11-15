@@ -90,7 +90,10 @@ struct MixerApp: Identifiable {
 
     private func reconcile(_ pid: pid_t) {
         guard let index = apps.firstIndex(where: { $0.id == pid }) else { return }
-        let gain = Float(apps[index].percent / 100)
+        let position = Float(apps[index].percent / 100)
+        // A cubic audio taper gives quieter levels more slider travel. This is a
+        // consistent perceptual approximation, not a device-specific macOS curve.
+        let gain = position * position * position
         // Unity is a true bypass: no tap, replay, changed output, or gain conversion.
         if gain >= 1 {
             routes.removeValue(forKey: pid)?.stop()
