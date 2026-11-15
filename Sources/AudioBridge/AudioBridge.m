@@ -6,7 +6,7 @@
 #import <stdatomic.h>
 #import <math.h>
 
-float VMClampGain(float value) { return isfinite(value) ? fminf(6.0f, fmaxf(0, value)) : 1.0f; }
+float VMClampGain(float value) { return isfinite(value) ? fminf(10.0f, fmaxf(0, value)) : 1.0f; }
 static AudioObjectPropertyAddress Address(AudioObjectPropertySelector selector, AudioObjectPropertyScope scope) {
     return (AudioObjectPropertyAddress){selector, scope, kAudioObjectPropertyElementMain};
 }
