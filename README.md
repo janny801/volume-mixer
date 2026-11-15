@@ -61,6 +61,27 @@ The build is ad-hoc signed for local use, not Developer ID signed or notarized. 
 
 At 100%, launching or quitting the mixer does not change that app's signal. Quitting while an app is turned down restores its original volume.
 
+## How the volume slider works
+
+The slider uses a **perceptual cubic curve** instead of directly scaling audio by
+the displayed percentage. This gives quieter levels more slider travel and aims
+to feel closer to a conventional volume control. The curve stays consistent
+across speakers and headphones; it does **not** exactly reproduce a particular
+macOS output device's volume mapping.
+
+| Slider | Signal amplitude | Behavior |
+| --- | --- | --- |
+| 100% | Original signal | Completely bypasses audio processing |
+| 75% | About 42% | Attenuates by about 7.5 dB |
+| 50% | 12.5% | Attenuates by about 18 dB |
+| 25% | About 1.6% | Attenuates by about 36 dB |
+| 0% | Zero | Mutes the app |
+
+The calculation is `gain = (slider percentage / 100)³`. Percentages describe the
+slider position, not measured perceived loudness. Changes are briefly smoothed
+to reduce clicks. **There is no amplification**, and your Mac's master volume
+still applies separately.
+
 ## Documentation
 
 - [Usage, permissions, troubleshooting, and removal](docs/usage.md)
