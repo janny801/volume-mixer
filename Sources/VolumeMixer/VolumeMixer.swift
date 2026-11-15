@@ -23,12 +23,11 @@ struct MixerApp: Identifiable {
     private var outputFingerprint = ""
     private var failures = Set<pid_t>()
     private var routeStarted: [pid_t: Date] = [:]
+    private var isPanelVisible = false
 
     init() {
         refresh()
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.refresh() }
-        }
+        updateTimer()
         NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification,
                                                object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.resetAll() }
@@ -36,6 +35,29 @@ struct MixerApp: Identifiable {
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.willSleepNotification,
                                                           object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.resetAll() }
+        }
+    }
+
+    func setPanelVisible(_ visible: Bool) {
+        guard isPanelVisible != visible else { return }
+        isPanelVisible = visible
+        if visible {
+            refresh()
+        }
+        updateTimer()
+    }
+
+    private func updateTimer() {
+        // Only run the 1-second polling timer when the mixer panel is open
+        // or when active attenuated routes need health monitoring.
+        let needsTimer = isPanelVisible || !routes.isEmpty
+        if needsTimer && timer == nil {
+            timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+                Task { @MainActor in self?.refresh() }
+            }
+        } else if !needsTimer && timer != nil {
+            timer?.invalidate()
+            timer = nil
         }
     }
 
@@ -99,12 +121,14 @@ struct MixerApp: Identifiable {
             routes.removeValue(forKey: pid)?.stop()
             routeStarted.removeValue(forKey: pid)
             apps[index].status = nil
+            updateTimer()
             return
         }
         let ids = (processes[pid] ?? []).sorted { $0.uint32Value < $1.uint32Value }
         guard !ids.isEmpty else {
             routes.removeValue(forKey: pid)?.stop()
             apps[index].status = "Waiting for audio"
+            updateTimer()
             return
         }
         if let route = routes[pid], route.processIDs == ids {
@@ -115,6 +139,7 @@ struct MixerApp: Identifiable {
                 route.setGain(gain)
                 apps[index].status = nil
             }
+            updateTimer()
             return
         }
         routes.removeValue(forKey: pid)?.stop()
@@ -125,6 +150,7 @@ struct MixerApp: Identifiable {
         } catch {
             fail(pid, index: index, message: error.localizedDescription)
         }
+        updateTimer()
     }
 
     private func fail(_ pid: pid_t, index: Int, message: String) {
@@ -133,6 +159,7 @@ struct MixerApp: Identifiable {
         failures.insert(pid)
         apps[index].percent = 100
         apps[index].status = message
+        updateTimer()
     }
 
     func resetAll() {
@@ -141,6 +168,7 @@ struct MixerApp: Identifiable {
         routeStarted.removeAll()
         failures.removeAll()
         for index in apps.indices { apps[index].percent = 100; apps[index].status = nil }
+        updateTimer()
     }
 
     func setLaunchAtLogin(_ enabled: Bool) {
@@ -228,6 +256,56 @@ struct MixerView: View {
                 if let error = model.loginError { Text(error).font(.caption2).foregroundStyle(.secondary) }
             }.padding(18)
         }.frame(width: 350)
+        .background(PanelVisibilityDetector { isVisible in
+            model.setPanelVisible(isVisible)
+        })
+    }
+}
+
+/// Detects when the menu-bar window is presented or dismissed without altering its layout or appearance.
+private struct PanelVisibilityDetector: NSViewRepresentable {
+    let onVisibilityChange: (Bool) -> Void
+
+    func makeNSView(context: Context) -> VisibilityView {
+        let view = VisibilityView()
+        view.onVisibilityChange = onVisibilityChange
+        return view
+    }
+
+    func updateNSView(_ nsView: VisibilityView, context: Context) {
+        nsView.onVisibilityChange = onVisibilityChange
+    }
+
+    final class VisibilityView: NSView {
+        var onVisibilityChange: ((Bool) -> Void)?
+        private var observer: NSObjectProtocol?
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if let observer {
+                NotificationCenter.default.removeObserver(observer)
+                self.observer = nil
+            }
+            guard let window else {
+                onVisibilityChange?(false)
+                return
+            }
+            onVisibilityChange?(true)
+            observer = NotificationCenter.default.addObserver(
+                forName: NSWindow.didChangeOcclusionStateNotification,
+                object: window,
+                queue: .main
+            ) { [weak self] _ in
+                guard let self, let window = self.window else { return }
+                self.onVisibilityChange?(window.occlusionState.contains(.visible))
+            }
+        }
+
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+        deinit {
+            if let observer { NotificationCenter.default.removeObserver(observer) }
+        }
     }
 }
 
