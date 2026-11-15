@@ -231,11 +231,11 @@ struct MixerView: View {
     }
 }
 
-@main struct VolumeMixerApp {
-    @MainActor static func main() {
-        let app = NSApplication.shared
-        let delegate = MixerMenuBarController()
-        app.delegate = delegate
-        withExtendedLifetime(delegate) { app.run() }
+@main struct VolumeMixerApp: App {
+    @StateObject private var model = MixerModel()
+    var body: some Scene {
+        MenuBarExtra("Volume Mixer", systemImage: "slider.horizontal.3") {
+            MixerView(model: model)
+        }.menuBarExtraStyle(.window)
     }
 }
