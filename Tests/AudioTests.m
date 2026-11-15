@@ -8,7 +8,7 @@ int main(void) {
         assert(VMClampGain(NAN) == 1);
         assert(VMClampGain(INFINITY) == 1);
         assert(VMClampGain(-1) == 0);
-        assert(VMClampGain(16) == 15);
+        assert(VMClampGain(26) == 25);
         float input[] = {-1, 1, -.5, .5, -.25, .25, 0, 0};
         float output[8];
         AudioBufferList in = {.mNumberBuffers = 1, .mBuffers = {{2, sizeof(input), input}}};

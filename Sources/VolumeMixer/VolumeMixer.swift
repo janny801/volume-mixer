@@ -119,12 +119,12 @@ struct MixerApp: Identifiable {
 
         // Audio gain calculation:
         // For general media, a cubic audio taper gives quieter levels more slider travel.
-        // For FaceTime (speech), avconferenced loses macOS hardware call boost when tapped (~20 dB).
-        // We apply a ~10.0x (~+20 dB) headroom compensation multiplier at the top end so that
+        // For FaceTime (speech), avconferenced loses macOS hardware call boost when tapped (~23.5 dB).
+        // We apply a ~15.0x (~+23.5 dB) headroom compensation multiplier at the top end so that
         // 99% matches the perceived loudness of 100% bypass without a sudden volume cliff.
         let gain: Float
         if isFaceTime {
-            gain = min(15.0, powf(position, 1.5) * 10.0)
+            gain = min(25.0, powf(position, 1.5) * 15.0)
         } else {
             gain = position * position * position
         }
