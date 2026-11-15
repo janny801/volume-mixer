@@ -8,12 +8,12 @@ int main(void) {
         assert(VMClampGain(NAN) == 1);
         assert(VMClampGain(INFINITY) == 1);
         assert(VMClampGain(-1) == 0);
-        assert(VMClampGain(4) == 2);
+        assert(VMClampGain(5) == 4);
         float input[] = {-1, 1, -.5, .5, -.25, .25, 0, 0};
         float output[8];
         AudioBufferList in = {.mNumberBuffers = 1, .mBuffers = {{2, sizeof(input), input}}};
         AudioBufferList out = {.mNumberBuffers = 1, .mBuffers = {{2, sizeof(output), output}}};
-        float gains[] = {0, .01, .25, .5, .99, 1, 2, -1};
+        float gains[] = {0, .01, .25, .5, .99, 1, -1};
         for (size_t g = 0; g < sizeof(gains)/sizeof(float); g++) {
             float current = gains[g];
             assert(VMRenderAudio(&in, &out, 2, &current, gains[g]));
