@@ -6,6 +6,7 @@ import AudioBridge
 struct MixerApp: Identifiable {
     let id: pid_t
     let name: String
+    let bundleID: String?
     let icon: NSImage
     var percent: Double = 100
     var playing = false
@@ -93,6 +94,7 @@ struct MixerApp: Identifiable {
         apps = running.map { app in
             var row = previous[app.processIdentifier] ?? MixerApp(
                 id: app.processIdentifier, name: app.localizedName ?? "Application",
+                bundleID: app.bundleIdentifier,
                 icon: app.icon ?? NSImage(systemSymbolName: "app", accessibilityDescription: nil)!)
             row.playing = playing.contains(row.id)
             return row
@@ -113,11 +115,23 @@ struct MixerApp: Identifiable {
     private func reconcile(_ pid: pid_t) {
         guard let index = apps.firstIndex(where: { $0.id == pid }) else { return }
         let position = Float(apps[index].percent / 100)
-        // A cubic audio taper gives quieter levels more slider travel. This is a
-        // consistent perceptual approximation, not a device-specific macOS curve.
-        let gain = position * position * position
+        let isFaceTime = apps[index].bundleID == "com.apple.FaceTime"
+
+        // Audio gain calculation:
+        // For general media, a cubic audio taper gives quieter levels more slider travel.
+        // For FaceTime (speech), avconferenced loses macOS hardware call boost when tapped.
+        // We apply a gentle speech curve + boost compensation so 99% transitions seamlessly
+        // from 100% bypass and conversation remains audible across the slider range.
+        let gain: Float
+        if isFaceTime {
+            // Quadratic taper (position^1.7) normalized so that near 100% it fills hardware headroom
+            gain = min(1.0, powf(position, 1.7) * 1.05)
+        } else {
+            gain = position * position * position
+        }
+
         // Unity is a true bypass: no tap, replay, changed output, or gain conversion.
-        if gain >= 1 {
+        if apps[index].percent >= 100 {
             routes.removeValue(forKey: pid)?.stop()
             routeStarted.removeValue(forKey: pid)
             apps[index].status = nil
